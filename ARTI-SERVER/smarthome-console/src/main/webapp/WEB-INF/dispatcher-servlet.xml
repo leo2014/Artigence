@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/mvc
+        http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+	<context:annotation-config />
+	<context:component-scan base-package="com.artigence.smarthome.console.controller"/>
+	<mvc:annotation-driven content-negotiation-manager="contentManager">
+		 <mvc:message-converters register-defaults="true"> 
+    		<bean class="org.springframework.http.converter.StringHttpMessageConverter"> 
+      			<property name="supportedMediaTypes" value = "text/plain;charset=UTF-8" /> 
+    		</bean> 
+  		</mvc:message-converters>     
+	</mvc:annotation-driven>
+	<mvc:default-servlet-handler/>
+	<!-- 使用urlrewriter filter过滤	
+	<mvc:resources mapping="/scripts/**" location="/scripts/" /> 
+	<mvc:resources mapping="/styles/**" location="/styles/" /> 
+	<mvc:resources mapping="/img/**" location="/img/" />
+	<mvc:resources mapping="/font/**" location="/font/" />
+	 -->
+	<!-- 视图解释类 -->
+	<!-- 根据客户端的不同的请求决定不同的view进行响应, 如 /blog/1.json /blog/1.xml -->
+	<bean id="contentManager" class="org.springframework.web.accept.ContentNegotiationManagerFactoryBean">
+		<property name="favorPathExtension" value="true"/>  
+		<property name="ignoreAcceptHeader" value="true"/>
+		<property name="useJaf" value="false"/>  
+		<property name="defaultContentType" value="text/html"/>
+		<!-- 扩展名至mimeType的映射,即 /user.json => application/json -->
+		<property name="mediaTypes">
+			<map>
+				<entry key="json" value="application/json" />
+				<entry key="xml" value="application/xml" />
+			</map>
+		</property>
+		<!-- 用于开启 /userinfo/123?format=json 的支持 -->
+		<property name="favorParameter" value="false"/>
+	</bean>
+	
+	<!-- 配置内容协商视图解析 -->
+	<bean id="contentNegotiatingViewResolver"
+		class="org.springframework.web.servlet.view.ContentNegotiatingViewResolver">
+		<!-- 设置内容协商管理器 -->
+		<property name="contentNegotiationManager" ref="contentManager"></property>
+		<!-- 设置默认视图 -->
+		<property name="defaultViews">
+			<list>
+				<ref bean="mappingJacksonJsonView" />
+				<ref bean="marshallingView" />
+			</list>
+		</property>
+		<!-- 设置视图解析器 -->
+		<property name="viewResolvers">
+			<list>
+			    <ref bean="defalutViewResolver" />
+			    <ref bean="beanNameViewResolver" />
+
+			</list>
+		</property>
+	</bean>
+	
+	<!-- View Resolers -->
+	<bean id="beanNameViewResolver"
+	    class="org.springframework.web.servlet.view.BeanNameViewResolver">		
+	</bean>
+	
+	<bean id="defalutViewResolver"  
+        class="org.springframework.web.servlet.view.InternalResourceViewResolver">  
+			<property name="viewClass" value="org.springframework.web.servlet.view.JstlView"/>
+			<property name="prefix" value="/WEB-INF/pages/"/>
+			<property name="suffix" value=".jsp"></property> 
+    </bean>  
+
+    
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<!-- one of the properties available; the maximum file size in bytes -->
+		<property name="defaultEncoding" value="UTF-8"/>
+		<property name="maxUploadSize">
+			<value>209715200</value>  <!--200M-->
+		</property>
+		<property name="uploadTempDir" value="temp"/>
+	</bean>
+	
+	<!-- JSON视图 -->
+	<bean id="mappingJacksonJsonView"
+		class="org.springframework.web.servlet.view.json.MappingJackson2JsonView"></bean>
+	<!-- XML视图 -->
+	<bean id="marshallingView"
+		class="org.springframework.web.servlet.view.xml.MarshallingView">
+		<property name="marshaller">
+			<bean class="org.springframework.oxm.xstream.XStreamMarshaller">
+				<property name="supportedClasses">
+					<list>
+						<value>java.util.Collection</value>
+					</list>
+				</property>
+				<property name="aliases">
+					<map>
+						<!-- <entry value="" key=""></entry> -->
+					</map>
+				</property>
+			</bean>
+		</property>
+	</bean>
+	
+		
+	<bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource"
+	     p:basename="i18n/messages"
+	     p:useCodeAsDefaultMessage="true"/>
+	<!-- 获取本地 -->  
+   <bean id="localeResolver" class="org.springframework.web.servlet.i18n.CookieLocaleResolver"/> 
+    <!-- Mapping exception to the handler view -->
+    <bean id="exceptionResolver" class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+            <!-- 定义默认的异常处理页面，当该异常类型的注册时使用 -->  
+        <property name="exceptionMappings">
+            <props>
+                <prop key="com.artigence.smarthome.service.exception.BusinessException">/commons/error.jsp</prop>
+            </props>
+        </property>
+    </bean>
+</beans>

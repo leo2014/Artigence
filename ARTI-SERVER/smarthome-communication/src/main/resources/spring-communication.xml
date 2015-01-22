@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd">
+
+	<!-- =============================================================== -->
+	<!-- Service Configuration -->
+	<!-- =============================================================== -->
+	<import resource="classpath*:spring-service.xml"/>
+	
+		
+	<!-- =============================================================== -->
+	<!-- Service Objects -->
+	<!-- =============================================================== -->
+	<context:component-scan base-package="com.artigence.smarthome.communication">
+	</context:component-scan>
+
+	<!-- =============================================================== -->
+	<!-- Mina Configuration -->
+	<!-- =============================================================== -->
+	<!-- //自定义编辑器  可自动将string类型的URL转化为URL类型对象 -->
+ 	<bean class="org.springframework.beans.factory.config.CustomEditorConfigurer">
+		<property name="customEditors">
+			<map>		
+				<entry key="java.net.SocketAddress"
+					 value="org.apache.mina.integration.beans.InetSocketAddressEditor"/>
+			</map>
+		</property>
+	</bean> 
+
+	<bean id="filterChainBuilder"
+		class="org.apache.mina.core.filterchain.DefaultIoFilterChainBuilder">
+		<property name="filters">
+			<map>
+
+				<entry key="codec">
+					<bean class="org.apache.mina.filter.codec.ProtocolCodecFilter">
+						<constructor-arg ref="codecFactory">
+						</constructor-arg>
+					</bean>
+				</entry>
+				<entry key="crcValid">
+					<bean class="com.artigence.smarthome.communication.filter.valid.CrcValidFilter"></bean>
+				</entry>
+						
+				<entry key="secret">
+					<bean class="com.artigence.smarthome.communication.filter.secret.SecretFilter"></bean>
+				</entry>
+				
+				<entry key="keepalive">
+					<bean class="org.apache.mina.filter.keepalive.KeepAliveFilter">
+						<constructor-arg ref="keepAliveMessageFactory" />
+						<constructor-arg type="org.apache.mina.core.session.IdleStatus" value="BOTH_IDLE"/>
+						<property name="forwardEvent" value="true" />
+						<property name="requestInterval" value="30" />
+					</bean>
+				</entry>
+				
+				<entry key="executor">
+					<bean class="org.apache.mina.filter.executor.ExecutorFilter" />
+				</entry>
+			</map>
+		</property>
+	</bean>
+
+	<bean id="ioAcceptor" class="org.apache.mina.transport.socket.nio.NioSocketAcceptor"
+		init-method="bind" destroy-method="unbind">
+<<<<<<< .mine
+		<constructor-arg type="int" value="1000"/>
+=======
+		<constructor-arg type="int" value="2000"/>
+		<property name="defaultLocalAddress" value=":5858" />
+		<property name="handler" ref="mainIoHandler" />
+		<property name="filterChainBuilder" ref="filterChainBuilder" />
+		<property name="reuseAddress" value="true" />
+		<property name="sessionConfig.receiveBufferSize" value="2000" />
+	</bean>
+	
+
+
+	
+	<!-- =============================================================== -->
+	<!-- Spring Async Listenner Tast -->
+	<!-- =============================================================== -->
+	<!-- 开启@AspectJ AOP代理 -->
+    <!-- <aop:aspectj-autoproxy proxy-target-class="true"/> -->
+    <!-- 任务调度器 -->
+    <!-- <task:scheduler id="scheduler" pool-size="5"/> -->
+    <!-- 任务执行器 -->
+    <!-- <task:executor id="executor" pool-size="5"/> -->
+    <!--开启注解调度支持 @Async @Scheduled-->
+    <!-- <task:annotation-driven executor="executor" scheduler="scheduler" proxy-target-class="true"/> -->
+</beans>

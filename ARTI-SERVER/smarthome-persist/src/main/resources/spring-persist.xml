@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+
+	<!-- =============================================================== -->
+	<!-- Resources -->
+	<!-- =============================================================== -->
+	<bean id="propertyConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>classpath:jdbc.properties</value>
+				<value>classpath:email-config.properties</value>
+			</list>
+		</property>
+	</bean>
+
+	<!-- =============================================================== -->
+	<!-- Data Source -->
+	<!-- =============================================================== -->
+
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="${jdbcDriverClassName}" />
+		<property name="jdbcUrl" value="${jdbcUrl}" />
+		<property name="user" value="${jdbcUsername}" />
+		<property name="password" value="${jdbcPassword}" />
+		<property name="autoCommitOnClose" value="true" />
+		<property name="initialPoolSize" value="${jdbcInitialSize}" />
+		<property name="maxPoolSize" value="${jdbcMaxSize}" />
+		<property name="minPoolSize" value="${jdbcMinSize}" />
+
+	</bean>
+
+	<!-- =============================================================== -->
+	<!-- Hibernate -->
+	<!-- =============================================================== -->
+
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<!-- <property name="configLocation" value="classpath:hibernate.cfg.xml" /> -->
+		<property name="packagesToScan">
+			<list>
+				<value>com.artigence.smarthome.persist.model</value>
+			</list>
+		</property>
+		<property name="hibernateProperties">
+			<props>
+				<!-- SQL dialect -->
+				<prop key="hibernate.dialect">${hibernate.dialect}</prop>
+
+				<!-- Enable Hibernate's automatic session context management -->
+				<!--( jta | thread | managed | custom.Class ) -->
+				<prop key="hibernate.current_session_context_class">
+					org.springframework.orm.hibernate4.SpringSessionContext
+				</prop>
+
+				<!-- Second-level cache -->
+				<!-- http://ehcache.sourceforge.net/documentation/hibernate.html -->
+				<prop key="hibernate.cache.use_second_level_cache">
+					true
+				</prop>
+				<prop key="hibernate.cache.region.factory_class">
+					org.hibernate.cache.ehcache.EhCacheRegionFactory
+				</prop>
+
+				<prop key="hibernate.jdbc.batch_size">20</prop>
+
+				<!-- UTF-8 -->
+				<prop key="hibernate.connection.useUnicode">true</prop>
+				<prop key="hibernate.connection.characterEncoding">utf-8</prop>
+
+				<!-- Echo all executed SQL to stdout -->
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="hibernate.format_sql">false</prop>
+				<prop key="hibernate.use_sql_comments">false</prop>
+
+				<!-- Drop and re-create the database schema on startup -->
+				<!--( validate | update | create | create-drop ) -->
+				<prop key="hibernate.hbm2ddl.import_files">/initdata/userdata.sql</prop>
+				<prop key="hibernate.hbm2ddl.auto">create</prop>
+			</props>
+		</property>
+	</bean>
+
+	<!-- =============================================================== -->
+	<!-- Data Access Objects -->
+	<!-- =============================================================== -->
+	<context:component-scan base-package="com.artigence.smarthome.persist.dao">
+	</context:component-scan>
+</beans>

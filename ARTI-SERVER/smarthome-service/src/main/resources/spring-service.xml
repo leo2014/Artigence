@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+	<!-- =============================================================== -->
+	<!-- Data Persist Configuration -->
+	<!-- =============================================================== -->
+	<import resource="classpath*:spring-persist.xml"/>
+	<import resource="classpath*:spring-email.xml"/>
+
+	<!-- =============================================================== -->
+	<!-- Transaction -->
+	<!-- =============================================================== -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+	<tx:annotation-driven transaction-manager="transactionManager"
+	    proxy-target-class="true"/>
+	<!-- 	
+	<tx:advice id="baseServiceAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="get*" read-only="true" propagation="REQUIRED" />之前是NOT_SUPPORT
+			<tx:method name="find*" read-only="true" propagation="REQUIRED" />之前是NOT_SUPPORT
+			<tx:method name="save*" propagation="REQUIRED" />
+			<tx:method name="update*" propagation="REQUIRED" />
+			<tx:method name="remove*" propagation="REQUIRED" />
+			<tx:method name="add*" propagation="REQUIRED" />
+			默认其他方法都是REQUIRED
+			<tx:method name="*" />
+		</tx:attributes>
+	</tx:advice>
+	<aop:config> 
+		<aop:advisor pointcut="execution(* *..dao.*(..))" advice-ref="txAdvice1" /> 
+	</aop:config>
+	-->
+	
+	
+	<!-- =============================================================== -->
+	<!-- Service Objects -->
+	<!-- =============================================================== -->
+	<context:component-scan base-package="com.artigence.smarthome.service">
+	</context:component-scan>
+</beans>

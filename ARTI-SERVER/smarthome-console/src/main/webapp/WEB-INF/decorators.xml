@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<decorators defaultdir="/decorators">
+	<excludes>
+		<pattern>/commons/*</pattern>
+	</excludes>
+	<decorator name="default" page="default.jsp">
+		<pattern>/user</pattern>
+		<pattern>/user/*</pattern>
+	</decorator>
+	<decorator name="admin" page="admin.jsp">
+		<pattern>/admin</pattern>
+		<pattern>/admin/*</pattern>
+	</decorator>
+</decorators>
