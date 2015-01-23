@@ -72,15 +72,12 @@
 
 	<bean id="ioAcceptor" class="org.apache.mina.transport.socket.nio.NioSocketAcceptor"
 		init-method="bind" destroy-method="unbind">
-<<<<<<< .mine
-		<constructor-arg type="int" value="1000"/>
-=======
 		<constructor-arg type="int" value="2000"/>
 		<property name="defaultLocalAddress" value=":5858" />
 		<property name="handler" ref="mainIoHandler" />
 		<property name="filterChainBuilder" ref="filterChainBuilder" />
 		<property name="reuseAddress" value="true" />
-		<property name="sessionConfig.receiveBufferSize" value="2000" />
+		<!--<property name="sessionConfig.receiveBufferSize" value="2000" />-->
 	</bean>
 	
 
