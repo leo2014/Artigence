@@ -5,7 +5,7 @@ INSERT INTO user VALUES (1,'admins home',22,'11111111111','lopoo1@qq.com',b'1','
 INSERT INTO user_role VALUES (1,2),(2,1);
 INSERT INTO authority_resource VALUES (2,2),(1,1),(2,3);
 INSERT INTO role_authority VALUES (1,1),(2,2),(1,3);
-INSERT INTO user_group VALUES (1,'home',1);
+INSERT INTO user_group VALUES (1,'1111111111111111111111111111111','home',1);
 UPDATE user SET user_group_id=1 where id=1 or id=2;
 INSERT INTO arti VALUES (1,'010203040506','name','first',1);
 INSERT INTO node VALUES (1,'node1',b'0',b'0','123456','power1','0001',b'0',1);
