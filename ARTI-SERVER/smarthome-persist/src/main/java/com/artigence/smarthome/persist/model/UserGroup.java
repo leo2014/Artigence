@@ -1,24 +1,14 @@
 package com.artigence.smarthome.persist.model;
 
-import java.util.List;
-
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
-
+import com.artigence.smarthome.persist.model.base.BaseEntity;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.GenericGenerator;
 
-import com.artigence.smarthome.persist.model.base.BaseEntity;
+import javax.persistence.*;
+import java.util.List;
 @Entity@DynamicInsert@DynamicUpdate
 @Table(name="user_group")
 public class UserGroup extends BaseEntity {
@@ -28,6 +18,9 @@ public class UserGroup extends BaseEntity {
     @GenericGenerator(name="idGenerator", strategy="native")
     @GeneratedValue(generator = "idGenerator")
 	private Long id;
+
+	@Column(name="develop_key",unique = true,length = 32,nullable = false)
+	private String developKey;
 	
 	@Column(name="name",unique=true,nullable=false)
 	private String name;
@@ -82,13 +75,21 @@ public class UserGroup extends BaseEntity {
 		this.artis = artis;
 	}
 
+	public String getDevelopKey() {
+		return developKey;
+	}
+
+	public void setDevelopKey(String developKey) {
+		this.developKey = developKey;
+	}
+
 	@Override
 	public boolean equals(Object o){
 		if(!(o instanceof UserGroup))
 			return false;
 		
 		final UserGroup ug = (UserGroup)o;
-		if(id!=null?!id.equals(ug.getId()):ug.getId()!=null)
+		if((id!=null?!id.equals(ug.getId()):ug.getId()!=null))
 			return false;
 		return true;
 	}
