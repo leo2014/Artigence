@@ -1,17 +1,15 @@
 package com.artigence.smarthome.service.user;
 
-import java.util.List;
-
-import javax.mail.MessagingException;
-
 import cn.org.rapid_framework.util.page.PageList;
-
 import com.artigence.smarthome.persist.model.User;
 import com.artigence.smarthome.service.core.dto.SearchParam;
 import com.artigence.smarthome.service.core.dto.SearchResult;
 import com.artigence.smarthome.service.user.dto.RoleVo;
 import com.artigence.smarthome.service.user.dto.UserSearchCriteria;
 import com.artigence.smarthome.service.user.dto.UserVo;
+
+import javax.mail.MessagingException;
+import java.util.List;
 
 /**
  * @date 2014年4月22日 下午3:54:36
@@ -83,10 +81,10 @@ public interface UserService {
 	
 	/**
 	 * user register system
-	 * @param userVo
+	 * @param username,password
 	 * @return
 	 */
-	public Long auth(String username, String password);
+	public User auth(String username, String password);
 	
 	/**
 	 * user email validation

@@ -1,7 +1,7 @@
 package com.artigence.smarthome.service.arti;
 
 import cn.org.rapid_framework.util.page.PageList;
-
+import com.artigence.smarthome.persist.model.Arti;
 import com.artigence.smarthome.service.arti.dto.ArtiSearchCriteria;
 import com.artigence.smarthome.service.arti.dto.ArtiVo;
 import com.artigence.smarthome.service.core.dto.SearchParam;
@@ -68,9 +68,9 @@ public interface ArtiService {
 	
 	/**
 	 * arti gateway login Net system
-	 * @param artiVo
+	 * @param mac,key
 	 */
-	public Long login(String mac);
+	public Arti login(String mac, String key);
 	
 	public SearchResult<ArtiVo> search(SearchParam searchParam,String username);
 	
