@@ -1,25 +1,7 @@
 
 package com.artigence.smarthome.persist.model;
 
-import java.io.Serializable;
-import java.util.Date;
-import java.util.List;
-
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import javax.validation.constraints.Size;
-
+import com.artigence.smarthome.persist.model.security.Role;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 import org.hibernate.annotations.DynamicInsert;
@@ -27,7 +9,11 @@ import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.validator.constraints.Email;
 
-import com.artigence.smarthome.persist.model.security.Role;
+import javax.persistence.*;
+import javax.validation.constraints.Size;
+import java.io.Serializable;
+import java.util.Date;
+import java.util.List;
 
 /** 
  * This class represents the basic user object.
@@ -44,6 +30,9 @@ public class User implements Serializable {
     @GenericGenerator(name="idGenerator", strategy="native")
     @GeneratedValue(generator = "idGenerator")
     private Long id;
+
+	@Column(name = "app_id", nullable = false, length = 32,unique = true)
+	private String appId;
 
     @Size(min=4, max=20)
     @Column(name = "username", nullable = false, length = 20, unique = true)
@@ -148,7 +137,13 @@ public class User implements Serializable {
 		this.name = name;
 	}
 
+	public String getAppId() {
+		return appId;
+	}
 
+	public void setAppId(String appId) {
+		this.appId = appId;
+	}
 
 	public Date getRegisterDate() {
 		return registerDate;
