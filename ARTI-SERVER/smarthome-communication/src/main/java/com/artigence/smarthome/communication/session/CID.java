@@ -2,13 +2,23 @@ package com.artigence.smarthome.communication.session;
 
 public class CID {
 	private ClientType clientType;
-	private Long clientId;
+	private String clientId;
 	
-	public CID(){};
-	
-	public CID(ClientType clientType, Long clientId){
+	public CID(){}
+
+	public CID(String clientId){
 		this.clientId = clientId;
+	}
+	public CID(ClientType clientType, String clientId){
+		this.clientId = clientId;//APP_ID
 		this.clientType = clientType;
+	}
+
+	public static CID getServerId(){
+		return new CID(ClientType.SERVER,"00000000000000000000000000000000");
+	}
+	public static CID getDefalutId(){
+		return new CID(ClientType.UNKNOWN,"00000000000000000000000000000001");
 	}
 
 	public ClientType getClientType() {
@@ -19,17 +29,17 @@ public class CID {
 		this.clientType = clientType;
 	}
 
-	public Long getClientId() {
+	public String getClientId() {
 		return clientId;
 	}
 
-	public void setClientId(Long clientId) {
+	public void setClientId(String clientId) {
 		this.clientId = clientId;
 	}
 	
 	@Override
 	public String toString(){
-		return "CID="+this.clientType+":"+this.clientId;
+		return this.clientId;
 	}
 	@Override
 	public int hashCode(){

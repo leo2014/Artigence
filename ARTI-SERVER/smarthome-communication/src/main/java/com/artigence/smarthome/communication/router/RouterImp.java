@@ -1,17 +1,16 @@
 package com.artigence.smarthome.communication.router;
 
-import javax.annotation.Resource;
-
+import com.artigence.smarthome.communication.core.DataHandler;
+import com.artigence.smarthome.communication.handler.ClientAuthHandler;
+import com.artigence.smarthome.communication.protocol.ArtiProtocol;
+import com.artigence.smarthome.communication.session.CID;
+import com.artigence.smarthome.persist.model.code.DataType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mina.core.session.IoSession;
 import org.springframework.stereotype.Component;
 
-import com.artigence.smarthome.communication.core.DataHandler;
-import com.artigence.smarthome.communication.handler.ClientAuthHandler;
-import com.artigence.smarthome.communication.protocol.ArtiProtocol;
-import com.artigence.smarthome.communication.protocol.Destination;
-import com.artigence.smarthome.persist.model.code.DataType;
+import javax.annotation.Resource;
 @Component
 public class RouterImp implements Router {
 	
@@ -48,7 +47,7 @@ public class RouterImp implements Router {
 		}else{
 			switch(artiProtocol.getDataType()){
 			case ARTI_AUTH:
-				session.write(getAuthResult(true,artiProtocol));
+				session.write(getAuthResult(true,CID.getDefalutId()));
 				break;
 			case CMD:
 				plainDataHandler.setIoSession(session);
@@ -107,18 +106,16 @@ public class RouterImp implements Router {
 		this.deleteNode = deleteNode;
 	}
 
-	private ArtiProtocol getAuthResult(boolean auth,ArtiProtocol ap){
+	private ArtiProtocol getAuthResult(boolean auth,CID destination){
 		ArtiProtocol artiProtocol = null;
 		byte[] data = null;
 		if(auth)
 			data=new byte[]{0x00};
 		else
 			data=new byte[]{0x01};
-		if(ap.getDataType() == DataType.ARTI_AUTH)
-			artiProtocol = new ArtiProtocol(Destination.ARTI,DataType.AUTH_REPLY,data,1);	
-		else
-			artiProtocol = new ArtiProtocol(Destination.USER,DataType.AUTH_REPLY,data,1);	
-		
+
+		artiProtocol = new ArtiProtocol(CID.getServerId(),destination,DataType.AUTH_REPLY,data,3);
+
 		return artiProtocol;
 	}
 

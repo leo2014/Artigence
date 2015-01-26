@@ -22,7 +22,7 @@ public abstract class DataValidationHandler implements DataHandler{
 		ArtiProtocol artiProtocol = (ArtiProtocol)message;
 		if(isAuth && isSafeAuth){
 			SessionClient session = (SessionClient)ioSession.getAttribute("sessionClient");
-			artiProtocol.setFrom(session.getClient());
+			artiProtocol.setSource(session.getClient());
 			//CommunicationServer.getAc().publishEvent(new DataPersistEvent(artiProtocol));
 		}
 		doProcess(artiProtocol);

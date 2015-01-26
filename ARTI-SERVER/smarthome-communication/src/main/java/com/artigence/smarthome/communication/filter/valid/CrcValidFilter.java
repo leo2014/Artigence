@@ -1,19 +1,12 @@
 package com.artigence.smarthome.communication.filter.valid;
 
-import java.util.Arrays;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang.ArrayUtils;
+import com.artigence.smarthome.communication.protocol.ArtiProtocol;
+import com.artigence.smarthome.persist.model.code.DataType;
 import org.apache.mina.core.filterchain.IoFilterAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.write.WriteRequest;
 
-import com.artigence.smarthome.communication.codec.arithmetic.CRC16;
-import com.artigence.smarthome.communication.codec.arithmetic.CheckSum;
-import com.artigence.smarthome.communication.protocol.ArtiProtocol;
-import com.artigence.smarthome.communication.protocol.Destination;
-import com.artigence.smarthome.persist.model.code.DataType;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class CrcValidFilter extends IoFilterAdapter {
 	private ConcurrentLinkedQueue<ArtiProtocol> writeQueue = null;
@@ -57,48 +50,21 @@ public class CrcValidFilter extends IoFilterAdapter {
 	 public void filterWrite(NextFilter nextFilter, IoSession session,
 	            WriteRequest writeRequest) throws Exception {
 		//System.out.println("crcvalid filter -----------------------------2");
-		writeQueue = (ConcurrentLinkedQueue<ArtiProtocol>)session.getAttribute("writeQueue");
-		ArtiProtocol artiProtocol = (ArtiProtocol)writeRequest.getMessage();
-		CheckSum check = new CheckSum();
-		int des = artiProtocol.getDestination().ordinal();
-		int length = artiProtocol.getLength()+8;
-		byte[] headcrc = new byte[]{(byte)(des >>> 8),(byte)des,(byte)(length >>> 8),(byte)length};
-		artiProtocol.setHeadCrc(check.check(headcrc));
-		
-		byte[] bodycrc = artiProtocol.getData();
-		
-		artiProtocol.setBodyCrc(check.check(bodycrc));
+//		writeQueue = (ConcurrentLinkedQueue<ArtiProtocol>)session.getAttribute("writeQueue");
+//		ArtiProtocol artiProtocol = (ArtiProtocol)writeRequest.getMessage();
+//		CheckSum check = new CheckSum();
+//
+//		byte[] headcrc = new byte[]{(byte)(des >>> 8),(byte)des,(byte)(length >>> 8),(byte)length};
+//		artiProtocol.setHeadCrc(check.check(headcrc));
+//
+//		byte[] bodycrc = artiProtocol.getData();
+//
+//		artiProtocol.setBodyCrc(check.check(bodycrc));
 		//if(writeQueue!=null)writeQueue.offer(artiProtocol);
 		
 	    nextFilter.filterWrite(session, writeRequest);
 	 }
-	/**
-	 * 获取校验结果
-	 * @param valid 校验成功true或失败false
-	 * @return
-	 */
-	private ArtiProtocol getValidResult(boolean valid){
-		ArtiProtocol validResult = new ArtiProtocol();
-		CheckSum check = new CheckSum();
-		validResult.setDestination(Destination.ARTI);
-		validResult.setLength(1);
-		validResult.setDataType(DataType.PLAIN_REPLY);
-		if(valid)
-			validResult.setData(new byte[]{0x00});
-		else
-			validResult.setData(new byte[]{0x01});
-		int des = validResult.getDestination().ordinal();
-		int length = validResult.getLength()+8;
-		byte[] headcrc = new byte[]{(byte)des,(byte)(des >>> 8),(byte)length,(byte)(length >>> 8)};
-		validResult.setHeadCrc(check.check(headcrc));
-		int ncode = validResult.getDataType().nCode();
-		byte[] bodycrc = new byte[]{(byte)ncode,(byte)(ncode >>> 8)};
-		
-		if(validResult.getData()!=null)
-			bodycrc = ArrayUtils.addAll(bodycrc, validResult.getData());
-		validResult.setBodyCrc(check.check(bodycrc));
-		return validResult;
-	}
+
 	
 	
 	private boolean processValid(ArtiProtocol artiProtocol,IoSession session){

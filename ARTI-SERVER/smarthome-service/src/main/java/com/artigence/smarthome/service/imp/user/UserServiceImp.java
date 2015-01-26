@@ -1,36 +1,13 @@
 package com.artigence.smarthome.service.imp.user;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.annotation.Resource;
-import javax.mail.MessagingException;
-import javax.transaction.Transactional;
-
-import org.hibernate.criterion.DetachedCriteria;
-import org.hibernate.criterion.Order;
-import org.hibernate.criterion.Restrictions;
-import org.springframework.beans.BeanUtils;
-import org.springframework.dao.DataAccessException;
-import org.springframework.stereotype.Service;
-
 import cn.org.rapid_framework.util.page.PageList;
-
 import com.artigence.smarthome.persist.dao.UserDao;
 import com.artigence.smarthome.persist.dao.UserLoginRecordDao;
 import com.artigence.smarthome.persist.dao.security.RoleDao;
 import com.artigence.smarthome.persist.model.User;
-import com.artigence.smarthome.persist.model.UserLoginRecord;
 import com.artigence.smarthome.persist.model.security.Authority;
 import com.artigence.smarthome.persist.model.security.Role;
-import com.artigence.smarthome.service.core.dto.OrderColumns;
-import com.artigence.smarthome.service.core.dto.Search;
-import com.artigence.smarthome.service.core.dto.SearchColumns;
-import com.artigence.smarthome.service.core.dto.SearchParam;
-import com.artigence.smarthome.service.core.dto.SearchResult;
+import com.artigence.smarthome.service.core.dto.*;
 import com.artigence.smarthome.service.email.EmailService;
 import com.artigence.smarthome.service.exception.BusinessException;
 import com.artigence.smarthome.service.imp.email.MailBean;
@@ -39,6 +16,17 @@ import com.artigence.smarthome.service.user.dto.RoleVo;
 import com.artigence.smarthome.service.user.dto.UserSearchCriteria;
 import com.artigence.smarthome.service.user.dto.UserVo;
 import com.artigence.smarthome.service.util.DtoBeanUtils;
+import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
+import org.springframework.beans.BeanUtils;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
+import javax.mail.MessagingException;
+import javax.transaction.Transactional;
+import java.util.*;
 
 @Service
 @Transactional
@@ -177,20 +165,20 @@ public class UserServiceImp implements UserService {
 
 	@Override
 	@Transactional
-	public Long auth(String username, String password) {
+	public User auth(String username, String password) {
 		User user = null;
 		if(username!=null  && password!=null){
 			user = userDao.getUserByUsername(username);
 			if(user!=null){
 				if(password.equals(user.getPassword())){
-					return user.getId();
+					return user;
 				}else
-					return -1L;
+					return null;
 			}else{
-				return -1L;
+				return user;
 			}
 		}else{
-			return -1L;
+			return user;
 		}
 	}
 

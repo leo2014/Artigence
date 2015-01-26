@@ -1,9 +1,11 @@
 package com.artigence.smarthome.communication.codec.arti;
 
-import java.util.Arrays;
-
+import com.artigence.smarthome.communication.codec.Decoder;
+import com.artigence.smarthome.communication.codec.arithmetic.CheckSum;
+import com.artigence.smarthome.communication.core.BufferContext;
+import com.artigence.smarthome.communication.protocol.ArtiProtocol;
+import com.artigence.smarthome.communication.session.CID;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mina.core.buffer.IoBuffer;
@@ -13,12 +15,7 @@ import org.apache.mina.filter.codec.CumulativeProtocolDecoder;
 import org.apache.mina.filter.codec.ProtocolDecoderOutput;
 import org.springframework.stereotype.Component;
 
-import com.artigence.smarthome.communication.codec.Decoder;
-import com.artigence.smarthome.communication.codec.arithmetic.CheckSum;
-import com.artigence.smarthome.communication.core.BufferContext;
-import com.artigence.smarthome.communication.protocol.ArtiProtocol;
-import com.artigence.smarthome.communication.protocol.Destination;
-import com.artigence.smarthome.persist.model.code.DataType;
+import java.nio.charset.Charset;
 
 /**
  * 
@@ -31,17 +28,7 @@ public class ArtiDecoder extends CumulativeProtocolDecoder implements Decoder {
 	private final CheckSum check = new CheckSum();
 	private int maxPackLength = 2000;
 
-	public int getMaxLineLength() {
-		return maxPackLength;
-	}
 
-	public void setMaxLineLength(int maxLineLength) {
-		if (maxLineLength <= 0) {
-			throw new IllegalArgumentException("maxLineLength: "
-					+ maxLineLength);
-		}
-		this.maxPackLength = maxLineLength;
-	}
 
 	public BufferContext getContext(IoSession session) {
 		BufferContext ctx;
@@ -70,7 +57,7 @@ public class ArtiDecoder extends CumulativeProtocolDecoder implements Decoder {
 	private boolean decoderProtocol(IoSession session, IoBuffer in,
 			ProtocolDecoderOutput out) throws Exception {
 
-		final int packHeadLength = 6;
+		final int packHeadLength = ArtiProtocol.PROTOCOL_HEAD_LENGTH;
 		// 先获取上次的处理上下文，其中可能有未处理完的数据
 		BufferContext ctx = getContext(session);
 		// 先把当前buffer中的数据追加到Context的buffer当中
@@ -96,43 +83,47 @@ public class ArtiDecoder extends CumulativeProtocolDecoder implements Decoder {
 			}
 			// 读取正常的消息，并写入输出流中，以便IoHandler进行处理
 			else if (length >= packHeadLength) {
-			
-				int desInt = buf.getChar();
-				int lengthInt = buf.getChar();
+
+				//header bytes
+				byte[] headerbytes = new byte[packHeadLength-2];
+				buf.get(headerbytes);
+				buf.reset();
+
+				//source | destination
+				String source = buf.getString(32, Charset.forName("UTF-8").newDecoder());
+				String destination = buf.getString(32, Charset.forName("UTF-8").newDecoder());
+				CID sourceId = new CID(source);
+				CID destinationId = new CID(destination);
+
+				//length | header crc
+				int bodyLength = buf.getChar();
 				int headCrc = buf.getChar();
-				
-				if(!this.checkHeader(new byte[]{(byte)(desInt >>> 8),(byte)(desInt),(byte)(lengthInt >>> 8),(byte)(lengthInt)}, headCrc)){
+
+				//checksum header
+				if(!this.checkHeader(headerbytes, headCrc)){
 					log.info("protocol header checkSum error");
-					session.write(getValidResult(false));
+					session.write(ArtiProtocol.getValidResult(false,sourceId,destinationId));
 					buf.clear();
 					buf.limit(buf.position());
 					break;
 				}
-				
-				Destination des = null;
-				if(Destination.values().length>desInt)
-					des = Destination.values()[desInt];
-				else{
-					buf.clear();buf.limit(buf.position());
-					break;	
-				}
-					
-				int bodyLength = lengthInt - 6;
-				if (bodyLength >= 4 && bodyLength <= buf.remaining()) {
-					byte[] data = new byte[bodyLength - 2];
+
+				//body
+				if (bodyLength >= 2 && (bodyLength+2) <= buf.remaining()) {
+					byte[] data = new byte[bodyLength];
 					buf.get(data);
 					int bodyCrc = buf.getChar();
 					
 					if(!this.checkBody(data, bodyCrc)){
 						log.info("protocol body checkSum error");
-						session.write(getValidResult(false));
+						session.write(ArtiProtocol.getValidResult(false,sourceId,destinationId));
 						buf.clear();
 						buf.limit(buf.position());
 						break;						
 					}
-				
-					ArtiProtocol artiProtocol = new ArtiProtocol(des, null,
-							data, data.length, headCrc, bodyCrc);
+
+					ArtiProtocol artiProtocol = new ArtiProtocol(sourceId, destinationId,
+							null,data, data.length, headCrc, bodyCrc);
 					out.write(artiProtocol);
 				}else if(bodyLength < 4){
 					log.info("protocol body length < 4 is error");
@@ -177,32 +168,17 @@ public class ArtiDecoder extends CumulativeProtocolDecoder implements Decoder {
 			return false;
 		return true;
 	}
-	
-	/**
-	 * 获取校验结果
-	 * @param valid 校验成功true或失败false
-	 * @return
-	 */
-	private ArtiProtocol getValidResult(boolean valid){
-		ArtiProtocol validResult = new ArtiProtocol();
-		CheckSum check = new CheckSum();
-		validResult.setDestination(Destination.ARTI);
-		validResult.setLength(1);
-		validResult.setDataType(DataType.PLAIN_REPLY);
-		if(valid)
-			validResult.setData(new byte[]{0x00});
-		else
-			validResult.setData(new byte[]{0x01});
-		int des = validResult.getDestination().ordinal();
-		int length = validResult.getLength()+8;
-		byte[] headcrc = new byte[]{(byte)des,(byte)(des >>> 8),(byte)length,(byte)(length >>> 8)};
-		validResult.setHeadCrc(check.check(headcrc));
-		int ncode = validResult.getDataType().nCode();
-		byte[] bodycrc = new byte[]{(byte)ncode,(byte)(ncode >>> 8)};
-		
-		if(validResult.getData()!=null)
-			bodycrc = ArrayUtils.addAll(bodycrc, validResult.getData());
-		validResult.setBodyCrc(check.check(bodycrc));
-		return validResult;
+
+
+	public int getMaxLineLength() {
+		return maxPackLength;
+	}
+
+	public void setMaxLineLength(int maxLineLength) {
+		if (maxLineLength <= 0) {
+			throw new IllegalArgumentException("maxLineLength: "
+					+ maxLineLength);
+		}
+		this.maxPackLength = maxLineLength;
 	}
 }

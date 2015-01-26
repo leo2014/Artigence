@@ -1,30 +1,29 @@
 package com.artigence.smarthome.communication.handler;
-import java.security.NoSuchAlgorithmException;
-import java.util.Random;
 
-import javax.annotation.Resource;
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
-import javax.transaction.Transactional;
-
-import org.apache.commons.codec.binary.Hex;
+import com.artigence.smarthome.communication.codec.arithmetic.TEA;
+import com.artigence.smarthome.communication.core.DataHandler;
+import com.artigence.smarthome.communication.protocol.ArtiProtocol;
+import com.artigence.smarthome.communication.session.CID;
+import com.artigence.smarthome.communication.session.ClientType;
+import com.artigence.smarthome.communication.session.SessionClient;
+import com.artigence.smarthome.communication.session.SessionManager;
+import com.artigence.smarthome.persist.model.Arti;
+import com.artigence.smarthome.persist.model.User;
+import com.artigence.smarthome.persist.model.code.DataType;
+import com.artigence.smarthome.service.arti.ArtiService;
+import com.artigence.smarthome.service.user.UserService;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mina.core.session.IoSession;
 import org.springframework.stereotype.Component;
 
-import com.artigence.smarthome.communication.codec.arithmetic.TEA;
-import com.artigence.smarthome.communication.core.DataHandler;
-import com.artigence.smarthome.communication.protocol.ArtiProtocol;
-import com.artigence.smarthome.communication.protocol.Destination;
-import com.artigence.smarthome.communication.session.CID;
-import com.artigence.smarthome.communication.session.ClientType;
-import com.artigence.smarthome.communication.session.SessionClient;
-import com.artigence.smarthome.communication.session.SessionManager;
-import com.artigence.smarthome.persist.model.code.DataType;
-import com.artigence.smarthome.service.arti.ArtiService;
-import com.artigence.smarthome.service.user.UserService;
+import javax.annotation.Resource;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.transaction.Transactional;
+import java.security.NoSuchAlgorithmException;
+import java.util.Random;
  
 @Component("clientAuthHandler")
 public class ClientAuthHandler extends DataValidationHandler implements DataHandler {
@@ -37,68 +36,67 @@ public class ClientAuthHandler extends DataValidationHandler implements DataHand
 	private UserService userService;
 	@Override
 	@Transactional
-	public void doProcess(ArtiProtocol artiProtocol) {
+	public void doProcess(ArtiProtocol artiProtocol){
 		log.info("arti is authoritying");
-		ArtiProtocol reply = null;
+		boolean isAuth = false;
 		byte[] data = artiProtocol.getData();
-		//data = Arrays.copyOfRange(data, 0, artiProtocol.getLength());
-		System.out.println("auth data:"+Hex.encodeHexString(data));
-		Long id = -1L;
-		CID client = new CID();
-		switch(artiProtocol.getDataType()){
-		case ARTI_AUTH:			
-			String mac = Hex.encodeHexString(data);
-			id = artiService.login(mac);
-			client.setClientType(ClientType.ARTI);
-			break;
-		case USER_AUTH:
-			String[] userdata = new String(data).split("&");
-			if(userdata.length == 2){
-				String username = userdata[0];String password = userdata[1];
-				id = userService.auth(username, password);
-				client.setClientType(ClientType.USER);
-			}
-			break;
-		default:
-			log.warn("unknow this dataPackage type in the ClientAuthHandler!");
+		String[] dataStr = null;
+		try{
+			dataStr = new String(data,"UTF-8").split("&");
+		}catch(Exception e){
+			e.printStackTrace();
 		}
-		if(id < 0){
-			reply = getAuthResult(false,artiProtocol);
-			ioSession.write(reply);
+		CID client = CID.getDefalutId();
+		User user = null;
+		Arti arti = null;
+		if(dataStr != null && dataStr.length == 2){
+			System.out.println("auth data:"+dataStr[0]);
 
-			ioSession.close(false);
-		}else{
-			client.setClientId(id);
-			SessionManager sessionManager = SessionManager.getInstance();
-			SessionClient session = sessionManager.getSessionClient(client);
-			if(session == null){
-				reply = getAuthResult(true,artiProtocol);
-				ioSession.write(reply);
-				
-				
-				ioSession.setAttribute("isAuth", true);
-				session = sessionManager.createSessionClient(ioSession, client);
-				//createSafeSession(ioSession,artiProtocol);
-			} else{
-				reply = getAuthResult(false,artiProtocol);
-				ioSession.write(reply);
-				
-				ioSession.close(false);
-			}		
+			String appId = null;
+			String cid = dataStr[0];
+			String appKey = dataStr[1];
+
+			switch(artiProtocol.getDataType()){
+			case ARTI_AUTH:
+				arti = artiService.login(cid,appKey);
+				if(arti!=null)appId = arti.getAppId();
+				client.setClientType(ClientType.ARTI);
+				break;
+			case USER_AUTH:
+				user = userService.auth(cid, appKey);
+				if(user!=null)appId = user.getAppId();
+				client.setClientType(ClientType.USER);
+				break;
+			default:
+				log.warn("unknow this dataPackage type in the ClientAuthHandler!");
+			}
+
+			if(appId!=null) {
+				client.setClientId(appId);
+				SessionManager sessionManager = SessionManager.getInstance();
+				SessionClient session = sessionManager.getSessionClient(client);
+				if (session == null) {
+					ioSession.setAttribute("isAuth", true);
+					sessionManager.createSessionClient(ioSession, client);
+					isAuth = true;
+				}
+			}
 		}
+
+		ArtiProtocol reply = getAuthResult(isAuth,client);
+		ioSession.write(reply);
+		if(!isAuth)ioSession.close(false);
 	}
 	
-	private ArtiProtocol getAuthResult(boolean auth,ArtiProtocol ap){
+	private ArtiProtocol getAuthResult(boolean auth,CID destination){
 		ArtiProtocol artiProtocol = null;
 		byte[] data = null;
 		if(auth)
 			data=new byte[]{0x00};
 		else
 			data=new byte[]{0x01};
-		if(ap.getDataType() == DataType.ARTI_AUTH)
-			artiProtocol = new ArtiProtocol(Destination.ARTI,DataType.AUTH_REPLY,data,1);	
-		else
-			artiProtocol = new ArtiProtocol(Destination.USER,DataType.AUTH_REPLY,data,1);	
+
+		artiProtocol = new ArtiProtocol(CID.getServerId(),destination,DataType.AUTH_REPLY,data,3);
 		
 		return artiProtocol;
 	}
@@ -118,9 +116,9 @@ public class ClientAuthHandler extends DataValidationHandler implements DataHand
 			byte[] data=ArrayUtils.addAll(k,validData.getBytes());
 			ArtiProtocol artiProtocol = null;
 			if(ap.getDataType() == DataType.ARTI_AUTH)
-				artiProtocol = new ArtiProtocol(Destination.ARTI,DataType.KEY,data,32);	
+				artiProtocol = new ArtiProtocol(null,null,DataType.KEY,data,32);
 			else
-				artiProtocol = new ArtiProtocol(Destination.USER,DataType.KEY,data,32);	
+				artiProtocol = new ArtiProtocol(null,null,DataType.KEY,data,32);
 			session.write(artiProtocol);
 			
 		} catch (NoSuchAlgorithmException e) {

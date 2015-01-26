@@ -1,23 +1,14 @@
 package com.artigence.smarthome.persist.model;
 
-import java.io.Serializable;
-import java.util.List;
-
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.GenericGenerator;
+
+import javax.persistence.*;
+import java.io.Serializable;
+import java.util.List;
 @Entity@DynamicInsert@DynamicUpdate
 @Table(name = "arti")
 public class Arti implements Serializable {
@@ -31,7 +22,10 @@ public class Arti implements Serializable {
 	
 	@Column(name="name", nullable = false, length = 64, unique = false)
 	private String name;
-	
+
+	@Column(name = "app_id", nullable = false, length = 32,unique = true)
+	private String appId;
+
 	@Column(name="mac")
 	private String mac;
 	
@@ -78,6 +72,13 @@ public class Arti implements Serializable {
 		this.serialNum = serialNum;
 	}
 
+	public String getAppId() {
+		return appId;
+	}
+
+	public void setAppId(String appId) {
+		this.appId = appId;
+	}
 
 	public UserGroup getUserGroup() {
 		return userGroup;

@@ -1,20 +1,6 @@
 package com.artigence.smarthome.service.imp.arti;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.annotation.Resource;
-import javax.transaction.Transactional;
-
-import org.hibernate.criterion.DetachedCriteria;
-import org.hibernate.criterion.Order;
-import org.hibernate.criterion.Restrictions;
-import org.springframework.beans.BeanUtils;
-import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
-
 import cn.org.rapid_framework.util.page.PageList;
-
 import com.artigence.smarthome.persist.dao.ArtiDao;
 import com.artigence.smarthome.persist.dao.UserDao;
 import com.artigence.smarthome.persist.dao.UserGroupDao;
@@ -26,14 +12,21 @@ import com.artigence.smarthome.service.arti.ArtiService;
 import com.artigence.smarthome.service.arti.dto.ArtiSearchCriteria;
 import com.artigence.smarthome.service.arti.dto.ArtiVo;
 import com.artigence.smarthome.service.arti.dto.NodeVo;
-import com.artigence.smarthome.service.core.dto.OrderColumns;
-import com.artigence.smarthome.service.core.dto.Search;
-import com.artigence.smarthome.service.core.dto.SearchColumns;
-import com.artigence.smarthome.service.core.dto.SearchParam;
-import com.artigence.smarthome.service.core.dto.SearchResult;
+import com.artigence.smarthome.service.core.dto.*;
 import com.artigence.smarthome.service.exception.BusinessException;
 import com.artigence.smarthome.service.user.dto.UserVo;
 import com.artigence.smarthome.service.util.DtoBeanUtils;
+import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Restrictions;
+import org.springframework.beans.BeanUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
+
+import javax.annotation.Resource;
+import javax.transaction.Transactional;
+import java.util.ArrayList;
+import java.util.List;
 @Service
 public class ArtiServiceImp implements ArtiService {
 
@@ -162,10 +155,10 @@ public class ArtiServiceImp implements ArtiService {
 
 	@Override
 	@Transactional
-	public Long login(String mac) { 
+	public Arti login(String mac, String key) {
 		List<Arti> artis=this.artiDao.findByKey("mac", mac);
 		Arti arti = artis.isEmpty()?null:artis.get(0);
-		return arti==null?-1L:arti.getId();
+		return arti;
 	}
 
 	@Override

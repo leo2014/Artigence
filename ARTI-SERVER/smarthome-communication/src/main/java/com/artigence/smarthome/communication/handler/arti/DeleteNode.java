@@ -1,17 +1,17 @@
 package com.artigence.smarthome.communication.handler.arti;
 
-import javax.annotation.Resource;
-
+import com.artigence.smarthome.communication.core.DataHandler;
+import com.artigence.smarthome.communication.handler.DataValidationHandler;
+import com.artigence.smarthome.communication.protocol.ArtiProtocol;
+import com.artigence.smarthome.communication.session.CID;
+import com.artigence.smarthome.communication.session.ClientType;
+import com.artigence.smarthome.persist.model.code.DataType;
+import com.artigence.smarthome.service.arti.NodeService;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.springframework.stereotype.Component;
 
-import com.artigence.smarthome.communication.core.DataHandler;
-import com.artigence.smarthome.communication.handler.DataValidationHandler;
-import com.artigence.smarthome.communication.protocol.ArtiProtocol;
-import com.artigence.smarthome.communication.protocol.Destination;
-import com.artigence.smarthome.persist.model.code.DataType;
-import com.artigence.smarthome.service.arti.NodeService;
+import javax.annotation.Resource;
 @Component("deleteNode")
 public class DeleteNode extends DataValidationHandler implements DataHandler {
 
@@ -24,7 +24,7 @@ public class DeleteNode extends DataValidationHandler implements DataHandler {
 		if(artiProtocol.getLength()<2)return;
 		switch(nodeSearilNum[0]<<8 | nodeSearilNum[1]){
 		case 0x0000:
-			ioSession.write(getDeleteNode());
+			ioSession.write(getDeleteNode(new CID(ClientType.ARTI,artiProtocol.getSource().getClientId())));
 			break;
 		default:
 			deleteNode(Hex.encodeHexString(nodeSearilNum));
@@ -33,7 +33,7 @@ public class DeleteNode extends DataValidationHandler implements DataHandler {
 
 	}
 
-	private ArtiProtocol getDeleteNode() {
+	private ArtiProtocol getDeleteNode(CID destination) {
 		ArtiProtocol deleteNode = new ArtiProtocol();
 		String serialNum = this.nodeService.getDeleteNode();
 		if(serialNum==null)
@@ -46,8 +46,8 @@ public class DeleteNode extends DataValidationHandler implements DataHandler {
 				e.printStackTrace();
 				deleteNode.setData(new byte[]{0x00,0x00});
 			}
-		deleteNode.setDestination(Destination.ARTI);
-		deleteNode.setLength(2);
+		deleteNode.setDestination(destination);
+		deleteNode.setLength(4);
 		deleteNode.setDataType(DataType.DELETE_NODE);
 		return deleteNode;
 		

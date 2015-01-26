@@ -1,23 +1,21 @@
 package com.artigence.smarthome.communication.handler.arti;
 
-import javax.annotation.Resource;
-
-import org.apache.commons.codec.binary.Hex;
-
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.stereotype.Component;
-
 import com.artigence.smarthome.communication.handler.DataValidationHandler;
 import com.artigence.smarthome.communication.protocol.ArtiProtocol;
-import com.artigence.smarthome.communication.protocol.Destination;
+import com.artigence.smarthome.communication.session.CID;
 import com.artigence.smarthome.communication.session.SessionClient;
 import com.artigence.smarthome.persist.model.code.DataType;
 import com.artigence.smarthome.service.arti.ArtiService;
 import com.artigence.smarthome.service.arti.NodeService;
 import com.artigence.smarthome.service.arti.dto.ArtiVo;
 import com.artigence.smarthome.service.arti.dto.NodeVo;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
 @Component("updateNodeStatus")
 public class UpdateNodeStatus extends DataValidationHandler {
 	private static final Log log = LogFactory.getLog(UpdateNodeStatus.class);
@@ -35,7 +33,7 @@ public class UpdateNodeStatus extends DataValidationHandler {
 	}
 	private void updateNode(ArtiProtocol ap){
 		SessionClient session = (SessionClient)ioSession.getAttribute("sessionClient");
-		ArtiVo artiVo = artiService.getArti(session.getClient().getClientId());
+		ArtiVo artiVo = artiService.getArti(1l);
 		String nodeSerial = Hex.encodeHexString(ArrayUtils.subarray(ap.getData(), 0, 2));
 		byte[] statusb = ArrayUtils.subarray(ap.getData(), 2, 4);
 		int status = (statusb[0]<<8 | statusb[1]);
@@ -55,7 +53,7 @@ public class UpdateNodeStatus extends DataValidationHandler {
 	private ArtiProtocol getValidResult(boolean valid){
 			ArtiProtocol validResult = new ArtiProtocol();
 			
-			validResult.setDestination(Destination.ARTI);
+			validResult.setDestination(CID.getDefalutId());
 			validResult.setLength(1);
 			validResult.setDataType(DataType.AUTH_REPLY);
 			if(valid)

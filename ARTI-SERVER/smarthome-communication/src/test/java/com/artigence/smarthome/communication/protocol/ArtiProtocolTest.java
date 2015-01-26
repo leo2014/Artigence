@@ -18,7 +18,7 @@ public class ArtiProtocolTest {
 	@Test
 	public void testToIoBuffer() {
 		byte[] data = new byte[]{0x00};
-		artiProtocol = new ArtiProtocol(Destination.ARTI,DataType.AUTH_REPLY,data,3,0,0);
+		artiProtocol = new ArtiProtocol(CID.getServerId(),CID.getDefalutId(),DataType.AUTH_REPLY,data,3,0,0);
 		
 		System.out.println(Hex.encodeHexString(data));
 		System.out.println(Hex.encodeHexString(artiProtocol.toIoBuffer().array()));
@@ -47,9 +47,9 @@ public class ArtiProtocolTest {
 	}
 	@Test
 	public void testLong(){
-		Long l1 = 100L;
+
 		ClientType c1 = ClientType.ARTI;
-		CID cid = new CID(c1,l1);
+		CID cid = new CID(c1,"11111111111111111");
 		System.out.println(cid);
 	}
 	
