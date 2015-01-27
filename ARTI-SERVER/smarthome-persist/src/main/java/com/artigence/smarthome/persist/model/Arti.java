@@ -23,9 +23,6 @@ public class Arti implements Serializable {
 	@Column(name="name", nullable = false, length = 64, unique = false)
 	private String name;
 
-	@Column(name = "app_id", nullable = false, length = 32,unique = true)
-	private String appId;
-
 	@Column(name="mac")
 	private String mac;
 	
@@ -72,13 +69,6 @@ public class Arti implements Serializable {
 		this.serialNum = serialNum;
 	}
 
-	public String getAppId() {
-		return appId;
-	}
-
-	public void setAppId(String appId) {
-		this.appId = appId;
-	}
 
 	public UserGroup getUserGroup() {
 		return userGroup;

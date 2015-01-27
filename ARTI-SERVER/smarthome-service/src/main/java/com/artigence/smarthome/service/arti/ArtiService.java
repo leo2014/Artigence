@@ -52,14 +52,10 @@ public interface ArtiService {
 	 * @return
 	 */
 	public PageList<ArtiVo> getArtis(int page, int pageSize);
-	
-	/**
-	 * find Artis with ArtiSearchCriteria
-	 * @param asc
-	 * @return
-	 */
+
+
 	public PageList<ArtiVo> getArtis(ArtiSearchCriteria asc, int page, int pageSize);
-	
+
 	/**
 	 * arti gateway register
 	 * @param artiVo

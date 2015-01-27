@@ -1,7 +1,8 @@
 package com.artigence.smarthome.communication.protocol;
 
-public enum Destination {
+public enum DestinationType {
 	SERVER,
 	ARTI,
-	USER
+	USER,
+	ALL
 }

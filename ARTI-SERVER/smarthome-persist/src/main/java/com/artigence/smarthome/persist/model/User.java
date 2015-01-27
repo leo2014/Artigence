@@ -31,9 +31,6 @@ public class User implements Serializable {
     @GeneratedValue(generator = "idGenerator")
     private Long id;
 
-	@Column(name = "app_id", nullable = false, length = 32,unique = true)
-	private String appId;
-
     @Size(min=4, max=20)
     @Column(name = "username", nullable = false, length = 20, unique = true)
     private String username;
@@ -135,14 +132,6 @@ public class User implements Serializable {
 
 	public void setName(String name) {
 		this.name = name;
-	}
-
-	public String getAppId() {
-		return appId;
-	}
-
-	public void setAppId(String appId) {
-		this.appId = appId;
 	}
 
 	public Date getRegisterDate() {
