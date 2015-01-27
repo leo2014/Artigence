@@ -3,7 +3,9 @@ package com.artigence.smarthome.communication.router;
 import com.artigence.smarthome.communication.core.DataHandler;
 import com.artigence.smarthome.communication.handler.ClientAuthHandler;
 import com.artigence.smarthome.communication.protocol.ArtiProtocol;
+import com.artigence.smarthome.communication.protocol.ArtiProtocolFactory;
 import com.artigence.smarthome.communication.session.CID;
+import com.artigence.smarthome.communication.session.SessionClient;
 import com.artigence.smarthome.persist.model.code.DataType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -32,6 +34,13 @@ public class RouterImp implements Router {
 
 	@Override
 	public void router(IoSession session, Object message) {
+
+		//获取客户端
+		CID client = null;
+		SessionClient sessionClient = (SessionClient)session.getAttribute("sessionClient");
+		if(sessionClient!=null)
+			client = sessionClient.getClient();
+
 		boolean isAuth = (Boolean)session.getAttribute("isAuth");
 //		boolean isSafeAuth = (Boolean)session.getAttribute("isSafeAuth");
 		ArtiProtocol artiProtocol = (ArtiProtocol)message;
@@ -47,7 +56,7 @@ public class RouterImp implements Router {
 		}else{
 			switch(artiProtocol.getDataType()){
 			case ARTI_AUTH:
-				session.write(getAuthResult(true,CID.getDefalutId()));
+				session.write(ArtiProtocolFactory.artiProtocolInstance(DataType.AUTH_REPLY,new byte[]{0x00},client));
 				break;
 			case CMD:
 				plainDataHandler.setIoSession(session);
@@ -105,20 +114,5 @@ public class RouterImp implements Router {
 	public void setDeleteNode(DataHandler deleteNode) {
 		this.deleteNode = deleteNode;
 	}
-
-	private ArtiProtocol getAuthResult(boolean auth,CID destination){
-		ArtiProtocol artiProtocol = null;
-		byte[] data = null;
-		if(auth)
-			data=new byte[]{0x00};
-		else
-			data=new byte[]{0x01};
-
-		artiProtocol = new ArtiProtocol(CID.getServerId(),destination,DataType.AUTH_REPLY,data,3);
-
-		return artiProtocol;
-	}
-
-
 
 }

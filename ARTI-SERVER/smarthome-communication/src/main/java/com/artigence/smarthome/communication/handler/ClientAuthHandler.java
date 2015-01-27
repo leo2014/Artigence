@@ -3,6 +3,7 @@ package com.artigence.smarthome.communication.handler;
 import com.artigence.smarthome.communication.codec.arithmetic.TEA;
 import com.artigence.smarthome.communication.core.DataHandler;
 import com.artigence.smarthome.communication.protocol.ArtiProtocol;
+import com.artigence.smarthome.communication.protocol.ArtiProtocolFactory;
 import com.artigence.smarthome.communication.session.CID;
 import com.artigence.smarthome.communication.session.ClientType;
 import com.artigence.smarthome.communication.session.SessionClient;
@@ -37,8 +38,11 @@ public class ClientAuthHandler extends DataValidationHandler implements DataHand
 	@Override
 	@Transactional
 	public void doProcess(ArtiProtocol artiProtocol){
-		log.info("arti is authoritying");
-		boolean isAuth = false;
+		System.out.println("arti is authoritying");
+
+		//获取客户端
+		CID client = null;
+
 		byte[] data = artiProtocol.getData();
 		String[] dataStr = null;
 		try{
@@ -46,60 +50,48 @@ public class ClientAuthHandler extends DataValidationHandler implements DataHand
 		}catch(Exception e){
 			e.printStackTrace();
 		}
-		CID client = CID.getDefalutId();
-		User user = null;
+
 		Arti arti = null;
+		User user = null;
+
 		if(dataStr != null && dataStr.length == 2){
 			System.out.println("auth data:"+dataStr[0]);
 
-			String appId = null;
 			String cid = dataStr[0];
 			String appKey = dataStr[1];
 
 			switch(artiProtocol.getDataType()){
 			case ARTI_AUTH:
 				arti = artiService.login(cid,appKey);
-				if(arti!=null)appId = arti.getAppId();
-				client.setClientType(ClientType.ARTI);
+				client = new CID(ClientType.ARTI,arti.getId());
 				break;
 			case USER_AUTH:
 				user = userService.auth(cid, appKey);
-				if(user!=null)appId = user.getAppId();
-				client.setClientType(ClientType.USER);
+				client = new CID(ClientType.USER,user.getId());
 				break;
 			default:
 				log.warn("unknow this dataPackage type in the ClientAuthHandler!");
 			}
 
-			if(appId!=null) {
-				client.setClientId(appId);
+			if(client!=null) {
+
 				SessionManager sessionManager = SessionManager.getInstance();
 				SessionClient session = sessionManager.getSessionClient(client);
 				if (session == null) {
 					ioSession.setAttribute("isAuth", true);
 					sessionManager.createSessionClient(ioSession, client);
-					isAuth = true;
 				}
 			}
 		}
 
-		ArtiProtocol reply = getAuthResult(isAuth,client);
+		byte[] replyd = new byte[]{0x00};
+		if(client == null)
+			replyd = new byte[]{0x01};
+		ArtiProtocol reply = ArtiProtocolFactory.artiProtocolInstance(DataType.AUTH_REPLY,replyd,client);
 		ioSession.write(reply);
-		if(!isAuth)ioSession.close(false);
+		if(client == null)ioSession.close(false);
 	}
-	
-	private ArtiProtocol getAuthResult(boolean auth,CID destination){
-		ArtiProtocol artiProtocol = null;
-		byte[] data = null;
-		if(auth)
-			data=new byte[]{0x00};
-		else
-			data=new byte[]{0x01};
 
-		artiProtocol = new ArtiProtocol(CID.getServerId(),destination,DataType.AUTH_REPLY,data,3);
-		
-		return artiProtocol;
-	}
 
 	private void createSafeSession(IoSession session,ArtiProtocol ap){
 		try {
