@@ -3,7 +3,9 @@ package com.artigence.smarthome.communication.handler;
 
 import com.artigence.smarthome.communication.core.DataHandler;
 import com.artigence.smarthome.communication.protocol.ArtiProtocol;
+import com.artigence.smarthome.communication.protocol.ArtiProtocolFactory;
 import com.artigence.smarthome.communication.session.CID;
+import com.artigence.smarthome.communication.session.SessionClient;
 import com.artigence.smarthome.persist.model.code.DataType;
 import org.springframework.stereotype.Component;
 @Component("createSafeAuthHandler")
@@ -13,32 +15,25 @@ public class CreateSafeAuthHandler extends DataValidationHandler implements
 	
 	@Override
 	public void doProcess(ArtiProtocol artiProtocol) {
-		CID client = CID.getDefalutId();
+		//获取客户端
+		CID client = null;
+		SessionClient sessionClient = (SessionClient)ioSession.getAttribute("sessionClient");
+		if(sessionClient!=null)
+			client = sessionClient.getClient();
 		if(artiProtocol.getDataType() == DataType.KEY){
 			String validData = (String)ioSession.getAttribute("validData");
 			String vd = new String(artiProtocol.getData());
 
 			if(validData.equals(vd)){
-				ioSession.write(getAuthResult(true,client));
+				ioSession.write(ArtiProtocolFactory.artiProtocolInstance(DataType.AUTH_REPLY, new byte[]{0x00}, client));
 			}else{				
-				ioSession.write(getAuthResult(false,client));
+				ioSession.write(ArtiProtocolFactory.artiProtocolInstance(DataType.AUTH_REPLY, new byte[]{0x01}, client));
 				ioSession.close(true);
 			}
 		}else{
-			ioSession.write(getAuthResult(false,client));
+			ioSession.write(ArtiProtocolFactory.artiProtocolInstance(DataType.AUTH_REPLY, new byte[]{0x01}, client));
 		}
 
 	}
-	private ArtiProtocol getAuthResult(boolean auth,CID destination){
-		ArtiProtocol artiProtocol = null;
-		byte[] data = null;
-		if(auth)
-			data=new byte[]{0x00};
-		else
-			data=new byte[]{0x01};
 
-		artiProtocol = new ArtiProtocol(CID.getServerId(),destination,DataType.AUTH_REPLY,data,3);
-
-		return artiProtocol;
-	}
 }

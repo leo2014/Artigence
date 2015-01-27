@@ -4,7 +4,7 @@ package com.artigence.smarthome.communication.handler.arti;
 import com.artigence.smarthome.communication.core.DataHandler;
 import com.artigence.smarthome.communication.handler.DataValidationHandler;
 import com.artigence.smarthome.communication.protocol.ArtiProtocol;
-import com.artigence.smarthome.communication.session.CID;
+import com.artigence.smarthome.communication.protocol.DestinationType;
 import com.artigence.smarthome.communication.session.SessionClient;
 import com.artigence.smarthome.persist.model.code.DataType;
 import com.artigence.smarthome.service.arti.ArtiService;
@@ -30,14 +30,14 @@ public class GetNewNodes extends DataValidationHandler implements DataHandler {
 	public void doProcess(ArtiProtocol artiProtocol) {
 		switch((((artiProtocol.getData()[0] & 0xff )<< 8) | (artiProtocol.getData()[1]& 0xff))){
 		case 0x0000:
-			ioSession.write(getNewNode(artiProtocol.getSource()));
+			ioSession.write(getNewNode(artiProtocol.getDestination()));
 			break;
 		default:
 			updateNode(artiProtocol);
 		}
 
 	}
-	private ArtiProtocol getNewNode(CID destination){
+	private ArtiProtocol getNewNode(Long destination){
 		ArtiProtocol artiProtocol = null;
 		byte[] data=new byte[]{0x00,0x00};
 		SessionClient session = (SessionClient)ioSession.getAttribute("sessionClient");
@@ -55,7 +55,7 @@ public class GetNewNodes extends DataValidationHandler implements DataHandler {
 
 			}	
 		}
-		artiProtocol = new ArtiProtocol(CID.getServerId(),destination,DataType.GET_NEW_NODE,data,2);
+		artiProtocol = new ArtiProtocol(DestinationType.ARTI,destination,DataType.GET_NEW_NODE,data,2);
 		return artiProtocol;
 	}
 	private void updateNode(ArtiProtocol ap){

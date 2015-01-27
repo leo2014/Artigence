@@ -1,13 +1,12 @@
 package com.artigence.smarthome.communication.session;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
-
+import com.artigence.smarthome.communication.protocol.ArtiProtocol;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.mina.core.future.ReadFuture;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
 
-import com.artigence.smarthome.communication.protocol.ArtiProtocol;
+import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * 
  * @author ripon
@@ -15,7 +14,7 @@ import com.artigence.smarthome.communication.protocol.ArtiProtocol;
  */
 public class SessionClient {
 	
-	private final String CLIENT_SESSION = "sessionClient";
+	private static final String CLIENT_SESSION = "sessionClient";
 	
 	private IoSession session;
 	private Long id;

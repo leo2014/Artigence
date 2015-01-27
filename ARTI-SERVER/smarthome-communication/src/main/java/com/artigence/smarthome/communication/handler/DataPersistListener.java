@@ -1,8 +1,6 @@
 package com.artigence.smarthome.communication.handler;
 
 import com.artigence.smarthome.communication.protocol.ArtiProtocol;
-import com.artigence.smarthome.communication.session.CID;
-import com.artigence.smarthome.communication.session.ClientType;
 import com.artigence.smarthome.persist.dao.ArtiDao;
 import com.artigence.smarthome.persist.dao.DataTransferRecordDao;
 import com.artigence.smarthome.persist.dao.UserDao;
@@ -42,29 +40,7 @@ public class DataPersistListener implements
 		dtr.setTransferDate(new Date());
 		dtr.setCmd(artiProtocol.getData());
 		DataTransferDirection dtd = DataTransferDirection.ArtiToServer;
-		CID cid = artiProtocol.getSource();
-		CID did = artiProtocol.getDestination();
-		if(cid.getClientType() == ClientType.ARTI){
-			dtr.setGateway(artiDao.getByUniqueField("app_id",cid.getClientId()));
-			if(did.getClientId().equals(CID.getServerId())){
-				dtd = DataTransferDirection.ArtiToServer;
-			}else if(did.getClientId().equals(CID.getDefalutId())){
-				//dtd = DataTransferDirection.artiToarti;
-			}else{
-				dtd = DataTransferDirection.artiToUser;
-				dtr.setUser(userDao.getByUniqueField("app_id",did.getClientId()));
-			}
-		}else if(cid.getClientType() == ClientType.USER){
-			dtr.setUser(userDao.getByUniqueField("app_id",cid.getClientId()));
-			if(did.getClientId().equals(CID.getServerId())){
-				dtd = DataTransferDirection.userToServer;
-			}else if(did.getClientId().equals(CID.getDefalutId())){
-				//dtd = DataTransferDirection.artiToarti;
-			}else{
-				dtd = DataTransferDirection.userToArti;
-				dtr.setGateway(artiDao.getByUniqueField("app_id",did.getClientId()));
-			}
-		}
+
 		dtr.setDataTransferDirection(dtd);
 		dtr.setDataType(artiProtocol.getDataType());
 		dataTransferRecordDao.save(dtr);

@@ -1,10 +1,9 @@
 package com.artigence.smarthome.communication.handler;
 
-import org.apache.mina.core.session.IoSession;
-
 import com.artigence.smarthome.communication.core.DataHandler;
 import com.artigence.smarthome.communication.protocol.ArtiProtocol;
-import com.artigence.smarthome.communication.session.SessionClient;
+import com.artigence.smarthome.communication.server.CommunicationServer;
+import org.apache.mina.core.session.IoSession;
 
 
 public abstract class DataValidationHandler implements DataHandler{
@@ -21,9 +20,9 @@ public abstract class DataValidationHandler implements DataHandler{
 		boolean isSafeAuth = true;//(Boolean)ioSession.getAttribute("isSafeAuth");
 		ArtiProtocol artiProtocol = (ArtiProtocol)message;
 		if(isAuth && isSafeAuth){
-			SessionClient session = (SessionClient)ioSession.getAttribute("sessionClient");
-			artiProtocol.setSource(session.getClient());
-			//CommunicationServer.getAc().publishEvent(new DataPersistEvent(artiProtocol));
+			//SessionClient session = (SessionClient)ioSession.getAttribute("sessionClient");
+
+			CommunicationServer.getAc().publishEvent(new DataPersistEvent(artiProtocol));
 		}
 		doProcess(artiProtocol);
 	}

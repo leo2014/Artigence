@@ -61,9 +61,9 @@
 		<level value="DEBUG" />
 	</logger>
 	
-<!-- 	<logger name="com.artigence.smarthome">
+ 	<logger name="com.artigence.smarthome">
 		<level value="INFO"/>
-	</logger> -->
+	</logger>
 	
 	<root>
 		<level value="debug"/>

@@ -2,7 +2,7 @@ package com.artigence.smarthome.communication.handler.arti;
 
 import com.artigence.smarthome.communication.handler.DataValidationHandler;
 import com.artigence.smarthome.communication.protocol.ArtiProtocol;
-import com.artigence.smarthome.communication.session.CID;
+import com.artigence.smarthome.communication.protocol.ArtiProtocolFactory;
 import com.artigence.smarthome.communication.session.SessionClient;
 import com.artigence.smarthome.persist.model.code.DataType;
 import com.artigence.smarthome.service.arti.ArtiService;
@@ -28,7 +28,7 @@ public class UpdateNodeStatus extends DataValidationHandler {
 	public void doProcess(ArtiProtocol artiProtocol) {
 		log.info("====================updateNode start==================================");
 		updateNode(artiProtocol);
-		ioSession.write(getValidResult(true));
+		ioSession.write(ArtiProtocolFactory.artiProtocolInstance(DataType.PLAIN_REPLY,new byte[]{0x00},null));
 		log.info("====================updateNode start==================================");
 	}
 	private void updateNode(ArtiProtocol ap){
@@ -48,20 +48,6 @@ public class UpdateNodeStatus extends DataValidationHandler {
 				nodeService.updateNode(nodeVo);
 			}
 		}
-		
-	}
-	private ArtiProtocol getValidResult(boolean valid){
-			ArtiProtocol validResult = new ArtiProtocol();
-			
-			validResult.setDestination(CID.getDefalutId());
-			validResult.setLength(1);
-			validResult.setDataType(DataType.AUTH_REPLY);
-			if(valid)
-				validResult.setData(new byte[]{0x00});
-			else
-				validResult.setData(new byte[]{0x01});
-			
-			return validResult;
 		
 	}
 	

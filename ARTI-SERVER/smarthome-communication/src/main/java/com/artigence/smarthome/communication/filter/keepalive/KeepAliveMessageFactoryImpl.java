@@ -1,6 +1,7 @@
 package com.artigence.smarthome.communication.filter.keepalive;
 
 import com.artigence.smarthome.communication.protocol.ArtiProtocol;
+import com.artigence.smarthome.communication.protocol.ArtiProtocolFactory;
 import com.artigence.smarthome.communication.session.CID;
 import com.artigence.smarthome.communication.session.SessionClient;
 import com.artigence.smarthome.persist.model.code.DataType;
@@ -36,15 +37,12 @@ public class KeepAliveMessageFactoryImpl implements KeepAliveMessageFactory {
 
 	@Override
 	public Object getResponse(IoSession session, Object request) {
-		return getHeartbeat(session);
+		//获取客户端
+		CID client = null;
+		SessionClient sessionClient = (SessionClient)session.getAttribute("sessionClient");
+		if(sessionClient!=null)
+			client = sessionClient.getClient();
+		return ArtiProtocolFactory.artiProtocolInstance(DataType.HEARTBEAT,null,client);
 	}
 
-	private ArtiProtocol getHeartbeat(IoSession ioSession){
-		ArtiProtocol artiProtocol = null;
-		SessionClient session = (SessionClient)ioSession.getAttribute("sessionClient");
-		CID destination = session.getClient();
-		artiProtocol = new ArtiProtocol(CID.getServerId(),destination,DataType.HEARTBEAT,null,2);
-
-		return artiProtocol;
-	}
 }

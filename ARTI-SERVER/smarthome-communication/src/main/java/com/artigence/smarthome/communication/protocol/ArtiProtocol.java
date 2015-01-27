@@ -1,30 +1,21 @@
 package com.artigence.smarthome.communication.protocol;
 
 import com.artigence.smarthome.communication.codec.arithmetic.CheckSum;
+import com.artigence.smarthome.persist.model.code.DataType;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 import org.apache.mina.core.buffer.IoBuffer;
 
-import com.artigence.smarthome.communication.codec.arithmetic.CRC16;
-import com.artigence.smarthome.communication.session.CID;
-import com.artigence.smarthome.persist.model.code.DataType;
-
-import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
-
 
 public class ArtiProtocol {
 
-	public final static int PROTOCOL_HEAD_LENGTH = 12;
-	public final static int PROTOCOl_CID_LENGTH = 4;
-	public final static int CRC_LENGTH = 2;
+	public final static int PROTOCOL_HEAD_LENGTH = 8;
+	public final static int PROTOCOL_MIN_LENGTH = 12;
 
 
-	private CID source;
-	private CID destination;
+	private DestinationType destinationType;
+	private Long destination;
 	private DataType dataType;
 	private byte[] data;
 	private int length;
@@ -35,18 +26,18 @@ public class ArtiProtocol {
 
 	public ArtiProtocol(){retryCount = 0;}
 
-	public ArtiProtocol(CID source,CID des,DataType dataType,byte[] data,int length){
-		this.source = source;
-		this.destination = des;
+	public ArtiProtocol(DestinationType destinationType,Long destination,DataType dataType,byte[] data,int length){
+		this.destinationType = destinationType;
+		this.destination = destination;
 		this.dataType = dataType;
 		this.data = data;
 		this.length = length;
 		retryCount = 0;
 	}
 	
-	public ArtiProtocol(CID source,CID des,DataType dataType,byte[] data,int length,long headCrc,long bodyCrc){
-		this.source = source;
-		this.destination = des;
+	public ArtiProtocol(DestinationType destinationType,Long destination,DataType dataType,byte[] data,int length,long headCrc,long bodyCrc){
+		this.destinationType = destinationType;
+		this.destination = destination;
 		this.dataType = dataType;
 		this.data = data;
 		this.length = length;
@@ -57,73 +48,41 @@ public class ArtiProtocol {
 	//public ArtiProtocol()
 
 	public IoBuffer toIoBuffer(){
-		IoBuffer buf = IoBuffer.allocate(PROTOCOL_HEAD_LENGTH+4).setAutoExpand(true);
+		IoBuffer buf = IoBuffer.allocate(PROTOCOL_MIN_LENGTH).setAutoExpand(true);
 
-		//source | destination
-		try {
-			int dlen = destination.getClientId().length();
-			int slen = source.getClientId().length();
-			buf.putString(source.getClientId().subSequence(0, slen), 32, Charset.forName("UTF-8").newEncoder());
-			buf.putString(destination.getClientId().subSequence(0, dlen), 32 , Charset.forName("UTF-8").newEncoder());
-		} catch (CharacterCodingException e) {
-			e.printStackTrace();
-		}
+		//DestinationType | destination
+		short desType = (short)destinationType.ordinal();
+		short des = destination.shortValue();
+		buf.putShort(desType);
+		buf.putShort(des);
 
 		//length
 		buf.putShort((short)(length));
 
 		//header crc
-		CRC16 crc16 = new CRC16();
-		crc16.update(buf.array());
-		buf.putShort((short)crc16.getValue());
-		crc16.reset();
+		CheckSum checkSum = new CheckSum();
+		buf.putShort((short)checkSum.check(buf.array()));
+
+
+		//dataType
+		short dataT = (short)dataType.nCode();
+		buf.putShort(dataT);
+		byte[] dt = new byte[]{(byte)(dataT >>> 8),(byte)dataT};
+
 
 		//data | body crc
 		if(data!=null){
-			crc16.update(data);
+
 			buf.put(data);
-			buf.putShort((short)crc16.getValue());
+			byte[] bodybytes = ArrayUtils.addAll(dt,data);
+			buf.putShort((short) checkSum.check(bodybytes));
 		}else{
-			buf.putShort((short)0);
+			buf.putShort((short) checkSum.check(dt));
 		}
 		buf.flip();
 		return buf;
 	}
 
-	/**
-	 * 获取校验结果
-	 * @param valid 校验成功true或失败false
-	 * @return Artiprotol
-	 */
-	public static ArtiProtocol getValidResult(boolean valid,CID source,CID destination){
-		ArtiProtocol validResult = new ArtiProtocol();
-		CheckSum check = new CheckSum();
-		validResult.setSource(source);
-		validResult.setDestination(destination);
-		validResult.setLength(1);
-		validResult.setDataType(DataType.PLAIN_REPLY);
-		if(valid)
-			validResult.setData(new byte[]{0x00});
-		else
-			validResult.setData(new byte[]{0x01});
-
-		//header crc
-		ByteBuffer headerBuffer = ByteBuffer.allocate(ArtiProtocol.PROTOCOL_HEAD_LENGTH-2);
-		try {
-			headerBuffer.put(source.getClientId().getBytes("UTF-8")).put(destination.getClientId().getBytes("UTF-8"));
-			headerBuffer.putShort((short)validResult.getLength());
-		} catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-		}
-		validResult.setHeadCrc(check.check(headerBuffer.array()));
-		int ncode = validResult.getDataType().nCode();
-		byte[] bodycrc = new byte[]{(byte)ncode,(byte)(ncode >>> 8)};
-
-		if(validResult.getData()!=null)
-			bodycrc = ArrayUtils.addAll(bodycrc, validResult.getData());
-		validResult.setBodyCrc(check.check(bodycrc));
-		return validResult;
-	}
 	
 	@Override
 	public String toString(){
@@ -131,19 +90,19 @@ public class ArtiProtocol {
 	}
 
 
-	public CID getSource() {
-		return source;
+	public DestinationType getDestinationType() {
+		return destinationType;
 	}
 
-	public void setSource(CID source) {
-		this.source = source;
+	public void setDestinationType(DestinationType destinationType) {
+		this.destinationType = destinationType;
 	}
 
-	public CID getDestination() {
+	public Long getDestination() {
 		return destination;
 	}
 
-	public void setDestination(CID destination) {
+	public void setDestination(Long destination) {
 		this.destination = destination;
 	}
 

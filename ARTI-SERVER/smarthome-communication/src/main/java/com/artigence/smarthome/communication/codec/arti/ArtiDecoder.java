@@ -4,8 +4,13 @@ import com.artigence.smarthome.communication.codec.Decoder;
 import com.artigence.smarthome.communication.codec.arithmetic.CheckSum;
 import com.artigence.smarthome.communication.core.BufferContext;
 import com.artigence.smarthome.communication.protocol.ArtiProtocol;
+import com.artigence.smarthome.communication.protocol.ArtiProtocolFactory;
+import com.artigence.smarthome.communication.protocol.DestinationType;
 import com.artigence.smarthome.communication.session.CID;
+import com.artigence.smarthome.communication.session.SessionClient;
+import com.artigence.smarthome.persist.model.code.DataType;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.mina.core.buffer.IoBuffer;
@@ -15,7 +20,6 @@ import org.apache.mina.filter.codec.CumulativeProtocolDecoder;
 import org.apache.mina.filter.codec.ProtocolDecoderOutput;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.Charset;
 
 /**
  * 
@@ -57,6 +61,12 @@ public class ArtiDecoder extends CumulativeProtocolDecoder implements Decoder {
 	private boolean decoderProtocol(IoSession session, IoBuffer in,
 			ProtocolDecoderOutput out) throws Exception {
 
+		//获取客户端
+		CID client = null;
+		SessionClient sessionClient = (SessionClient)session.getAttribute("sessionClient");
+		if(sessionClient!=null)
+			client = sessionClient.getClient();
+
 		final int packHeadLength = ArtiProtocol.PROTOCOL_HEAD_LENGTH;
 		// 先获取上次的处理上下文，其中可能有未处理完的数据
 		BufferContext ctx = getContext(session);
@@ -73,7 +83,7 @@ public class ArtiDecoder extends CumulativeProtocolDecoder implements Decoder {
 			// 读取消息头部分
 			int length = buf.remaining();
 			log.info("session-"+session.getId()+" 接收未解码数据长度[" + length + "] "+
-					"limit[" + buf.limit() + "]:"+Hex.encodeHexString(buf.array()).substring(buf.position()*2, buf.limit()*2));
+					"limit[" + buf.limit() + "]:" + Hex.encodeHexString(buf.array()).substring(buf.position()*2, buf.limit()*2));
 			// 检查读取是否正常，不正常的话清空buffer
 			if (length < 0 || length > maxPackLength) {
 				System.out.println("长度[" + length
@@ -89,11 +99,9 @@ public class ArtiDecoder extends CumulativeProtocolDecoder implements Decoder {
 				buf.get(headerbytes);
 				buf.reset();
 
-				//source | destination
-				String source = buf.getString(32, Charset.forName("UTF-8").newDecoder());
-				String destination = buf.getString(32, Charset.forName("UTF-8").newDecoder());
-				CID sourceId = new CID(source);
-				CID destinationId = new CID(destination);
+				//destinationType | destination
+				DestinationType destT = buf.getEnumShort(DestinationType.class);
+				Long destination = Long.valueOf(buf.getShort());
 
 				//length | header crc
 				int bodyLength = buf.getChar();
@@ -102,28 +110,36 @@ public class ArtiDecoder extends CumulativeProtocolDecoder implements Decoder {
 				//checksum header
 				if(!this.checkHeader(headerbytes, headCrc)){
 					log.info("protocol header checkSum error");
-					session.write(ArtiProtocol.getValidResult(false,sourceId,destinationId));
+					session.write(ArtiProtocolFactory.artiProtocolInstance(DataType.PLAIN_REPLY,new byte[]{0x01},client));
 					buf.clear();
 					buf.limit(buf.position());
 					break;
 				}
 
 				//body
-				if (bodyLength >= 2 && (bodyLength+2) <= buf.remaining()) {
+				if (bodyLength >= 0 && (bodyLength+4) <= buf.remaining()) {
+					byte[] bodybytes = null;
+					//dataType
+					DataType dataType = DataType.getDataType(buf.getShort());
+
+					bodybytes = new byte[]{(byte)(dataType.nCode()>>>8),(byte)dataType.nCode()};
+					//data
 					byte[] data = new byte[bodyLength];
 					buf.get(data);
 					int bodyCrc = buf.getChar();
-					
-					if(!this.checkBody(data, bodyCrc)){
+
+					bodybytes = ArrayUtils.addAll(bodybytes,data);
+					if(!this.checkBody(bodybytes, bodyCrc)){
 						log.info("protocol body checkSum error");
-						session.write(ArtiProtocol.getValidResult(false,sourceId,destinationId));
+						session.write(ArtiProtocolFactory.artiProtocolInstance(DataType.PLAIN_REPLY, new byte[]{0x01}, client));
 						buf.clear();
 						buf.limit(buf.position());
 						break;						
 					}
 
-					ArtiProtocol artiProtocol = new ArtiProtocol(sourceId, destinationId,
-							null,data, data.length, headCrc, bodyCrc);
+					ArtiProtocol artiProtocol = new ArtiProtocol(destT, destination,
+							dataType,data, data.length, headCrc, bodyCrc);
+					System.out.println("artiProtocol"+artiProtocol);
 					out.write(artiProtocol);
 				}else if(bodyLength < 4){
 					log.info("protocol body length < 4 is error");
@@ -158,14 +174,20 @@ public class ArtiDecoder extends CumulativeProtocolDecoder implements Decoder {
 	}
 	
 	private boolean checkHeader(byte[] header,long headCrc){
-		if(check.check(header) != headCrc)
+		System.out.println("Hex bytes:" +Hex.encodeHexString(header)+" crc:"+check.check(header) );
+		if(check.check(header) != headCrc){
+			System.out.println("protocol header checkSum error");
 			return false;
+		}
+
 		return true;
 	}
 	
 	private boolean checkBody(byte[] body,long bodyCrc){
-		if(check.check(body) != bodyCrc)
+		if(check.check(body) != bodyCrc) {
+			System.out.println("protocol body checkSum error");
 			return false;
+		}
 		return true;
 	}
 

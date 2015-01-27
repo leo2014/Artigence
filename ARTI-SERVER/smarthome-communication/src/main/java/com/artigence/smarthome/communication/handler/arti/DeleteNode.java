@@ -3,8 +3,6 @@ package com.artigence.smarthome.communication.handler.arti;
 import com.artigence.smarthome.communication.core.DataHandler;
 import com.artigence.smarthome.communication.handler.DataValidationHandler;
 import com.artigence.smarthome.communication.protocol.ArtiProtocol;
-import com.artigence.smarthome.communication.session.CID;
-import com.artigence.smarthome.communication.session.ClientType;
 import com.artigence.smarthome.persist.model.code.DataType;
 import com.artigence.smarthome.service.arti.NodeService;
 import org.apache.commons.codec.DecoderException;
@@ -24,7 +22,7 @@ public class DeleteNode extends DataValidationHandler implements DataHandler {
 		if(artiProtocol.getLength()<2)return;
 		switch(nodeSearilNum[0]<<8 | nodeSearilNum[1]){
 		case 0x0000:
-			ioSession.write(getDeleteNode(new CID(ClientType.ARTI,artiProtocol.getSource().getClientId())));
+			ioSession.write(getDeleteNode(artiProtocol.getDestination()));
 			break;
 		default:
 			deleteNode(Hex.encodeHexString(nodeSearilNum));
@@ -33,7 +31,7 @@ public class DeleteNode extends DataValidationHandler implements DataHandler {
 
 	}
 
-	private ArtiProtocol getDeleteNode(CID destination) {
+	private ArtiProtocol getDeleteNode(Long destination) {
 		ArtiProtocol deleteNode = new ArtiProtocol();
 		String serialNum = this.nodeService.getDeleteNode();
 		if(serialNum==null)
